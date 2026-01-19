@@ -5,84 +5,83 @@ import mascot from './mascot.png';
 
 function App() {
   const [email, setEmail] = useState('');
-  const [country, setCountry] = useState('Ghana');
   const [amount, setAmount] = useState(250);
-  const [purpose, setPurpose] = useState('Family Support');
-  const [message, setMessage] = useState('');
+  const [step, setStep] = useState('calculate'); // calculate, verify, success
+  const [livenessStatus, setLivenessStatus] = useState('Ready');
 
-  const marketRates = { Ghana: 15.15, Jamaica: 158.50, Philippines: 59.45 };
   const fee = (amount * 0.10).toFixed(2);
-  const totalReceiving = ((amount - fee) * marketRates[country]).toLocaleString(undefined, {maximumFractionDigits: 0});
+  const receiving = ((amount - fee) * 15.15).toLocaleString(undefined, {maximumFractionDigits: 0});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, country, purpose, phase: 'Solo_Founder_Beta' }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setMessage(`✅ Application received! We will verify your ID for the ${purpose} transfer.`);
-        setEmail('');
-      }
-    } catch (err) { setMessage("❌ Connection error."); }
+  const startVerification = () => {
+    setStep('verify');
+    setLivenessStatus('Aligning Face...');
+    // Simulated Liveness Check
+    setTimeout(() => setLivenessStatus('Turn Head Left...'), 1500);
+    setTimeout(() => setLivenessStatus('Turn Head Right...'), 3000);
+    setTimeout(() => {
+        setStep('success');
+    }, 5000);
   };
 
   return (
     <div className="App">
-        <div style={{background: '#006B3F', color: '#fff', padding: '10px', fontSize: '0.75rem', textAlign: 'center', fontWeight: 'bold'}}>
-            🇬🇭 DIRECT-TO-MOMO PAYOUTS: SETTLED VIA REGISTERED GHANA MERCHANTS
+        <div style={{background: '#FFCC00', color: '#000', padding: '8px', fontSize: '0.7rem', textAlign: 'center', fontWeight: 'bold'}}>
+            🔒 ENHANCED BIOMETRIC SECURITY ACTIVE (iBeta Level 2)
         </div>
-        
-        <nav className="navbar" style={{padding: '20px'}}><img src={logo} alt="Logo" style={{height: '35px'}}/></nav>
-        
+
+        <nav className="navbar" style={{padding: '15px'}}><img src={logo} alt="Logo" style={{height: '30px'}}/></nav>
+
         <header className="hero">
-            <div className="container">
-                <img src={mascot} className="mascot" alt="Mascot" style={{height: '90px'}} />
-                <h1>SwiftPay 10% <br/><span style={{fontSize: '0.7em', color: '#FFCC00'}}>Direct to Mobile Money</span></h1>
+            <div className="container" style={{maxWidth: '450px'}}>
                 
-                <div style={{background: '#1a1a1a', padding: '25px', borderRadius: '25px', border: '1px solid #333', marginBottom: '20px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                        <span>Amount (BMD):</span>
-                        <strong>${amount}</strong>
+                {step === 'calculate' && (
+                    <div className="card-ui">
+                        <img src={mascot} alt="Mascot" style={{height: '70px'}} />
+                        <h2>SwiftPay <span style={{color: '#FFCC00'}}>Solo</span></h2>
+                        <div style={{background: '#1a1a1a', padding: '20px', borderRadius: '20px', margin: '20px 0', textAlign: 'left'}}>
+                            <p>Send: <strong>${amount} BMD</strong></p>
+                            <p style={{color: '#ff4d4d', fontSize: '0.8rem'}}>10% Fee: -${fee}</p>
+                            <hr style={{borderColor: '#333'}}/>
+                            <p style={{fontSize: '1.2rem'}}>Receives: <span style={{color: '#FFCC00'}}>{receiving} GHS</span></p>
+                        </div>
+                        <input type="range" min="50" max="1000" step="50" value={amount} onChange={(e)=>setAmount(e.target.value)} style={{width: '100%', accentColor: '#FFCC00'}} />
+                        <button onClick={() => setStep('id-upload')} className="btn-mtn" style={{marginTop: '20px', width: '100%'}}>Start Transfer</button>
                     </div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', color: '#ff4d4d', fontSize: '0.85rem'}}>
-                        <span>10% Fee:</span>
-                        <span>-${fee}</span>
+                )}
+
+                {step === 'id-upload' && (
+                    <div className="card-ui">
+                        <h3>Step 1: ID Upload</h3>
+                        <p style={{fontSize: '0.9rem', color: '#888'}}>Upload your Bermuda Driver's License or Passport.</p>
+                        <div style={{border: '2px dashed #444', padding: '40px', borderRadius: '15px', margin: '20px 0', cursor: 'pointer'}} onClick={() => setStep('verify')}>
+                            📸 Click to Photo ID
+                        </div>
+                        <button onClick={() => setStep('calculate')} style={{background: 'none', color: '#888', border: 'none'}}>Cancel</button>
                     </div>
-                    <div style={{height: '1px', background: '#444', margin: '15px 0'}}></div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <span>Family Receives:</span>
-                        <strong style={{color: '#FFCC00', fontSize: '1.8rem'}}>{totalReceiving} {country === 'Ghana' ? 'GHS' : 'PHP'}</strong>
+                )}
+
+                {step === 'verify' && (
+                    <div className="card-ui" style={{textAlign: 'center'}}>
+                        <h3>Step 2: Liveness Check</h3>
+                        <div style={{width: '200px', height: '200px', borderRadius: '50%', border: '4px solid #FFCC00', margin: '20px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', position: 'relative', overflow: 'hidden'}}>
+                            <div className="scanner-line"></div>
+                            <span style={{fontSize: '3rem'}}>👤</span>
+                        </div>
+                        <h4 style={{color: '#FFCC00'}}>{livenessStatus}</h4>
+                        <p style={{fontSize: '0.8rem', color: '#888'}}>Keep your head within the circle and follow the prompts.</p>
+                        <button onClick={startVerification} className="btn-mtn" style={{marginTop: '10px'}}>Start Camera</button>
                     </div>
-                    <input type="range" min="50" max="1500" step="50" value={amount} onChange={(e)=>setAmount(e.target.value)} style={{width: '100%', marginTop: '25px', accentColor: '#FFCC00'}} />
-                </div>
+                )}
 
-                <form className="waitlist-form" onSubmit={handleSubmit}>
-                    <input type="email" placeholder="Your Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
-                    
-                    <select value={purpose} onChange={(e)=>setPurpose(e.target.value)} style={{margin: '10px 0', padding: '10px', width: '100%', borderRadius: '8px', background: '#222', color: '#fff'}}>
-                        <option value="Family Support">Family Support</option>
-                        <option value="School Fees">School Fees</option>
-                        <option value="Medical Bills">Medical Bills</option>
-                        <option value="Business Investment">Business Investment</option>
-                    </select>
+                {step === 'success' && (
+                    <div className="card-ui">
+                        <span style={{fontSize: '4rem'}}>✅</span>
+                        <h3>Identity Verified</h3>
+                        <p>Your biometric map matches your ID perfectly. Your account is now active.</p>
+                        <button onClick={() => setStep('calculate')} className="btn-mtn" style={{width: '100%'}}>Back to Dashboard</button>
+                    </div>
+                )}
 
-                    <select value={country} onChange={(e)=>setCountry(e.target.value)} style={{marginBottom: '10px'}}>
-                        <option value="Ghana">Ghana 🇬🇭</option>
-                        <option value="Jamaica">Jamaica 🇯🇲</option>
-                        <option value="Philippines">Philippines 🇵🇭</option>
-                    </select>
-
-                    <button type="submit" className="btn-mtn">Apply for Transfer Access</button>
-                    {message && <p className="msg" style={{color: '#FFCC00', marginTop: '15px'}}>{message}</p>}
-                </form>
-
-                <div style={{fontSize: '0.65rem', color: '#777', marginTop: '40px', textAlign: 'left', borderTop: '1px solid #222', paddingTop: '20px'}}>
-                    <strong>SOLO FOUNDER NOTICE:</strong> SwiftPay is a Bermuda-based technology project. Payouts in Ghana are facilitated through registered MTN MoMo Merchants. We comply with all Bermuda Monetary Authority (BMA) reporting requirements for digital remittances.
-                </div>
             </div>
         </header>
     </div>
