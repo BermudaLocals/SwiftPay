@@ -9,16 +9,26 @@ function App() {
   const [service, setService] = useState('MTN');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [waitlist, setWaitlist] = useState([]);
+  const [pass, setPass] = useState('');
   
+  // Editable Float State
+  const [float, setFloat] = useState({ Ghana: '5000', Nigeria: '2500', Bermuda: '10000' });
+  const [isEditing, setIsEditing] = useState(false);
+
   const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
 
-  // Currency Map for "Everywhere"
-  const currencyMap = {
-    'Bermuda': '$',
-    'Ghana': 'GH₵',
-    'Nigeria': '₦',
-    'Kenya': 'KSh',
-    'South Africa': 'R'
+  useEffect(() => {
+    if (isAdmin && pass === "SwiftPay2026") {
+      fetch('/api/admin/list')
+        .then(res => res.json())
+        .then(data => setWaitlist(data))
+        .catch(err => console.log("Error loading list"));
+    }
+  }, [isAdmin, pass]);
+
+  const handleFloatChange = (country, value) => {
+    setFloat(prev => ({ ...prev, [country]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -32,27 +42,69 @@ function App() {
       });
       const data = await response.json();
       if (data.success) {
-        setMessage(`🎉 Success! You're on the ${country} list.`);
+        setMessage(`🎉 Added to ${country} waitlist!`);
         setEmail('');
       }
-    } catch (err) { setMessage("❌ Connection error."); }
+    } catch (err) { setMessage("❌ Error."); }
     setLoading(false);
   };
 
   if (isAdmin) {
-    /* ... (Admin code remains the same as previous) ... */
-    return <div className="admin-view">Admin Panel Active (Use Password)</div>;
+    if (pass !== "SwiftPay2026") {
+      return (
+        <div style={{padding: '100px', textAlign: 'center', background: '#111', color: 'white', height: '100vh'}}>
+          <h2>SwiftPay Secure Admin</h2>
+          <input type="password" placeholder="Password" onChange={(e) => setPass(e.target.value)} style={{padding: '10px'}} />
+        </div>
+      );
+    }
+    return (
+      <div className="admin-panel" style={{padding: '40px', color: 'white', background: '#1a1a1a', minHeight: '100vh'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center'}}>
+            <h2>Global Waitlist ({waitlist.length})</h2>
+            <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
+                {Object.keys(float).map(loc => (
+                    <div key={loc} style={{background: '#333', padding: '10px', borderRadius: '8px', fontSize: '14px'}}>
+                        {loc}: {isEditing ? 
+                            <input 
+                                style={{width: '60px', background: '#444', color: 'white', border: 'none'}} 
+                                value={float[loc]} 
+                                onChange={(e) => handleFloatChange(loc, e.target.value)} 
+                            /> : <strong>{float[loc]}</strong>}
+                    </div>
+                ))}
+                <button 
+                    onClick={() => setIsEditing(!isEditing)} 
+                    style={{width: 'auto', padding: '5px 15px', fontSize: '12px', background: isEditing ? '#28a745' : '#007cc0'}}
+                >
+                    {isEditing ? 'Save Balances' : 'Update Float'}
+                </button>
+            </div>
+        </div>
+        
+        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+          <thead><tr style={{background: '#333', textAlign: 'left'}}>
+            <th style={{padding: '12px'}}>Email</th><th style={{padding: '12px'}}>Country</th><th style={{padding: '12px'}}>Service</th>
+          </tr></thead>
+          <tbody>
+            {waitlist.map((u, i) => (
+              <tr key={i} style={{borderBottom: '1px solid #444'}}>
+                <td style={{padding: '12px'}}>{u.email}</td><td style={{padding: '12px'}}>{u.country}</td><td style={{padding: '12px'}}>{u.preferred_service}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   return (
     <div className="App">
-      <nav className="navbar"><img src={logo} alt="SwiftPay" style={{height: '40px'}}/></nav>
+      <nav className="navbar"><img src={logo} alt="Logo" style={{height: '40px'}}/></nav>
       <header className="hero">
         <div className="container">
           <img src={mascot} className="mascot" alt="Mascot" style={{height: '140px'}} />
-          <h1>Global Mobile Transfers <br/><span>Made Simple.</span></h1>
-          <p>Sending to {country}? Use {currencyMap[country] || '$'} with SwiftPay.</p>
-          
+          <h1>Everywhere You Need <br/><span>To Send Money.</span></h1>
           <form className="waitlist-form" onSubmit={handleSubmit}>
             <input type="email" placeholder="Your Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
             <div className="row">
@@ -61,17 +113,15 @@ function App() {
                 <option value="Ghana">Ghana 🇬🇭</option>
                 <option value="Nigeria">Nigeria 🇳🇬</option>
                 <option value="Kenya">Kenya 🇰🇪</option>
-                <option value="South Africa">South Africa 🇿🇦</option>
               </select>
               <select value={service} onChange={(e)=>setService(e.target.value)}>
                 <option value="MTN">MTN MoMo</option>
                 <option value="Vodafone">Vodafone Cash</option>
-                <option value="Airtel">AirtelTigo / Airtel Money</option>
+                <option value="Airtel">Airtel Money</option>
                 <option value="MPesa">M-Pesa</option>
-                <option value="OPay">OPay / PalmPay</option>
               </select>
             </div>
-            <button type="submit" className="btn-mtn">{loading ? "Processing..." : "Join Global Waitlist"}</button>
+            <button type="submit" className="btn-mtn">{loading ? "Wait..." : "Join Global List"}</button>
             {message && <p className="msg">{message}</p>}
           </form>
         </div>
