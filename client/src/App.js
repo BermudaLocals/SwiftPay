@@ -4,98 +4,76 @@ import logo from './logo.png';
 import mascot from './mascot.png';
 
 function App() {
-  const [view, setView] = useState('user'); // Toggle between 'user' and 'admin'
-  const [step, setStep] = useState('calculate');
-  const [livenessStatus, setLivenessStatus] = useState('Ready');
+  const [email, setEmail] = useState('');
+  const [view, setView] = useState('user');
+  const [waitlistStatus, setWaitlistStatus] = useState('idle'); // idle, joined
+  const [amount, setAmount] = useState(250);
 
-  // Mock Data for Admin Dashboard
-  const [kycQueue, setKycQueue] = useState([
-    { id: 'TX990', email: 'sender1@gmail.com', country: 'Ghana', liveness: '98%', status: 'Success', date: 'Jan 19' },
-    { id: 'TX991', email: 'test@bmd.com', country: 'Philippines', liveness: '42%', status: 'Failed (Head Turn)', date: 'Jan 19' }
-  ]);
+  const marketRates = { Ghana: 15.15, Jamaica: 158.50, Philippines: 59.45 };
+  const fee = (amount * 0.10).toFixed(2);
+  const receiving = ((amount - fee) * marketRates['Ghana']).toLocaleString(undefined, {maximumFractionDigits: 0});
 
-  const handleLiveness = () => {
-    setStep('verify');
-    setLivenessStatus('Tracking Eye Movement...');
-    setTimeout(() => setLivenessStatus('Turn Left...'), 1500);
-    setTimeout(() => setLivenessStatus('Turn Right...'), 3000);
-    setTimeout(() => {
-        setStep('success');
-        // Add current user to admin queue for simulation
-        setKycQueue([...kycQueue, { id: 'TX'+Math.floor(Math.random()*1000), email: 'newuser@bmd.com', country: 'Ghana', liveness: 'Pass', status: 'Pending Review', date: 'Now' }]);
-    }, 5000);
+  const handleWaitlist = async (e) => {
+    e.preventDefault();
+    // Simulate API call
+    setWaitlistStatus('joined');
   };
 
   return (
     <div className="App">
-        {/* Navigation for Solo Founder */}
+        {/* Navigation */}
         <div style={{background: '#111', padding: '10px', display: 'flex', justifyContent: 'center', gap: '20px'}}>
             <button onClick={() => setView('user')} style={{background: view === 'user' ? '#FFCC00' : 'none', color: view === 'user' ? '#000' : '#fff', border: 'none', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer'}}>Customer View</button>
-            <button onClick={() => setView('admin')} style={{background: view === 'admin' ? '#FFCC00' : 'none', color: view === 'admin' ? '#000' : '#fff', border: 'none', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer'}}>Admin Dashboard</button>
+            <button onClick={() => setView('admin')} style={{background: view === 'admin' ? '#FFCC00' : 'none', color: view === 'admin' ? '#000' : '#fff', border: 'none', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer'}}>Founder Dashboard</button>
         </div>
 
         {view === 'user' ? (
             <header className="hero">
                 <div className="container" style={{maxWidth: '450px'}}>
-                    {step === 'calculate' && (
+                    <img src={mascot} alt="SwiftPay" style={{height: '80px', marginBottom: '10px'}} />
+                    
+                    {waitlistStatus === 'idle' ? (
                         <div className="card-ui">
-                            <img src={mascot} alt="SwiftPay" style={{height: '80px'}} />
-                            <h2>Verified Transfer</h2>
-                            <p>Verify your identity once to unlock 10% transfers.</p>
-                            <button onClick={() => setStep('verify')} className="btn-mtn" style={{width: '100%', marginTop: '20px'}}>Verify My Identity</button>
-                        </div>
-                    )}
-
-                    {step === 'verify' && (
-                        <div className="card-ui">
-                            <div style={{width: '200px', height: '200px', borderRadius: '50%', border: '4px solid #FFCC00', margin: '0 auto', background: '#000', overflow: 'hidden', position: 'relative'}}>
-                                <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '4rem'}}>👤</div>
-                                <div className="scanning-bar"></div>
+                            <h2 style={{fontSize: '2rem'}}>SwiftPay <span style={{color: '#FFCC00'}}>10%</span></h2>
+                            <p style={{color: '#888', marginBottom: '20px'}}>The digital bridge from Bermuda to Africa.</p>
+                            
+                            <div style={{background: '#1a1a1a', padding: '20px', borderRadius: '15px', textAlign: 'left', marginBottom: '20px'}}>
+                                <p style={{margin: '5px 0'}}>Send <strong>${amount} BMD</strong></p>
+                                <p style={{margin: '5px 0', fontSize: '1.4rem', color: '#FFCC00'}}>Get <strong>{receiving} GHS</strong></p>
+                                <input type="range" min="100" max="1000" step="50" value={amount} onChange={(e)=>setAmount(e.target.value)} style={{width: '100%', marginTop: '15px'}} />
                             </div>
-                            <h3 style={{color: '#FFCC00', marginTop: '20px'}}>{livenessStatus}</h3>
-                            <button onClick={handleLiveness} className="btn-mtn" style={{marginTop: '20px'}}>Start Biometric Scan</button>
-                        </div>
-                    )}
 
-                    {step === 'success' && (
-                        <div className="card-ui">
-                            <h2 style={{color: '#FFCC00'}}>✅ Verified</h2>
-                            <p>Head movement and ID match successful. You are now authorized to send.</p>
-                            <button onClick={() => setStep('calculate')} className="btn-mtn" style={{width: '100%'}}>Back</button>
+                            <form onSubmit={handleWaitlist}>
+                                <input type="email" placeholder="Enter email for early access" value={email} onChange={(e)=>setEmail(e.target.value)} required style={{width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #333', background: '#222', color: '#fff', marginBottom: '10px'}} />
+                                <button type="submit" className="btn-mtn" style={{width: '100%', padding: '15px', background: '#FFCC00', border: 'none', borderRadius: '10px', fontWeight: 'bold'}}>Join 2026 Alpha Waitlist</button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="card-ui" style={{border: '1px solid #FFCC00', animation: 'fadeIn 0.5s'}}>
+                            <span style={{fontSize: '3rem'}}>🚀</span>
+                            <h3>You're on the list!</h3>
+                            <p style={{fontSize: '0.9rem', color: '#ccc'}}>We'll email you soon to complete your <strong>Biometric Verification</strong> (ID & Selfie) to unlock transfers.</p>
+                            <div style={{background: '#222', padding: '15px', borderRadius: '10px', marginTop: '20px', textAlign: 'left'}}>
+                                <p style={{fontSize: '0.75rem', color: '#888'}}><strong>WHY VERIFY LATER?</strong> To keep your data safe, we only request ID documents right before your first transfer. No unnecessary data storage.</p>
+                            </div>
                         </div>
                     )}
                 </div>
             </header>
         ) : (
-            <div className="admin-panel" style={{padding: '40px', background: '#121212', minHeight: '100vh', color: '#fff'}}>
-                <h2 style={{color: '#FFCC00'}}>SwiftPay Admin: KYC Queue</h2>
-                <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '20px', textAlign: 'left'}}>
-                    <thead>
-                        <tr style={{borderBottom: '2px solid #333', color: '#888'}}>
-                            <th style={{padding: '10px'}}>Date</th>
-                            <th>User Email</th>
-                            <th>Target</th>
-                            <th>Liveness Score</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {kycQueue.map((user, index) => (
-                            <tr key={index} style={{borderBottom: '1px solid #222'}}>
-                                <td style={{padding: '15px'}}>{user.date}</td>
-                                <td>{user.email}</td>
-                                <td>{user.country}</td>
-                                <td style={{color: parseFloat(user.liveness) < 50 ? '#ff4d4d' : '#4CAF50'}}>{user.liveness}</td>
-                                <td>{user.status}</td>
-                                <td>
-                                    <button style={{background: '#4CAF50', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '5px'}}>Approve</button>
-                                    <button style={{background: '#ff4d4d', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer'}}>Reject</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div style={{padding: '50px', background: '#000', minHeight: '100vh', color: '#fff'}}>
+                <h2 style={{color: '#FFCC00'}}>SwiftPay Founder Dashboard</h2>
+                <div style={{display: 'flex', gap: '20px', marginBottom: '30px'}}>
+                    <div style={{background: '#1a1a1a', padding: '20px', borderRadius: '10px', flex: 1}}>
+                        <h3>842</h3>
+                        <p style={{color: '#888'}}>Waitlist Signups</p>
+                    </div>
+                    <div style={{background: '#1a1a1a', padding: '20px', borderRadius: '10px', flex: 1, border: '1px solid #FFCC00'}}>
+                        <h3>$10,000</h3>
+                        <p style={{color: '#888'}}>Target Cap (Class T)</p>
+                    </div>
+                </div>
+                <p>New emails will appear here. You can manually invite them to the "Head-Turn" selfie stage once your BMA application is ready.</p>
             </div>
         )}
     </div>
