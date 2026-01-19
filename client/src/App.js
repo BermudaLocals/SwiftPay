@@ -12,10 +12,10 @@ function App() {
   const [waitlist, setWaitlist] = useState([]);
   const [pass, setPass] = useState('');
   
-  // Track Float (Local Cash) and Settlements (Card money coming in)
+  // Liquidity and Revenue State
   const [float, setFloat] = useState({ Ghana: '10000', Nigeria: '500000', Bermuda: '5000' });
-  const [pendingSettlement, setPendingSettlement] = useState('1250.00'); 
   const [isEditing, setIsEditing] = useState(false);
+  const [totalVolume, setTotalVolume] = useState(5000); // Example total money moved ($)
 
   const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
 
@@ -28,9 +28,8 @@ function App() {
     }
   }, [isAdmin, pass]);
 
-  const handleFloatChange = (loc, value) => {
-    setFloat(prev => ({ ...prev, [loc]: value }));
-  };
+  // Logic: Calculate profit based on a mix of 3% and 8% fees (Average ~5%)
+  const estimatedProfit = (totalVolume * 0.05).toFixed(2);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,10 +42,10 @@ function App() {
       });
       const data = await response.json();
       if (data.success) {
-        setMessage(`🎉 Registered! You'll be notified for ${country} transfers.`);
+        setMessage(`🎉 Success! You're on the list.`);
         setEmail('');
       }
-    } catch (err) { setMessage("❌ Connection error."); }
+    } catch (err) { setMessage("❌ Error."); }
     setLoading(false);
   };
 
@@ -54,39 +53,48 @@ function App() {
     if (pass !== "SwiftPay2026") {
       return (
         <div style={{padding: '100px', textAlign: 'center', background: '#111', color: 'white', height: '100vh'}}>
-          <h2>SwiftPay Admin Login</h2>
-          <input type="password" placeholder="Admin Key" onChange={(e) => setPass(e.target.value)} style={{padding: '10px'}} />
+          <h2>Admin Login</h2>
+          <input type="password" placeholder="Password" onChange={(e) => setPass(e.target.value)} style={{padding: '10px'}} />
         </div>
       );
     }
     return (
       <div className="admin-panel" style={{padding: '40px', color: 'white', background: '#1a1a1a', minHeight: '100vh'}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
-            <h2>Liquidity & Settlement</h2>
-            <div style={{textAlign: 'right'}}>
-                <span style={{color: '#aaa', fontSize: '12px'}}>PENDING FROM CARDS (USD):</span>
-                <h3 style={{color: '#28a745', margin: '0'}}>${pendingSettlement}</h3>
+        {/* --- REVENUE CALCULATOR SECTION --- */}
+        <div style={{display: 'flex', gap: '20px', marginBottom: '30px'}}>
+            <div style={{flex: 1, background: 'linear-gradient(45deg, #111, #222)', padding: '20px', borderRadius: '15px', border: '1px solid #333'}}>
+                <div style={{color: '#888', fontSize: '12px'}}>TOTAL VOLUME MOVED</div>
+                <h2 style={{margin: '5px 0'}}>${totalVolume.toLocaleString()}</h2>
+            </div>
+            <div style={{flex: 1, background: 'linear-gradient(45deg, #1a3a1a, #111)', padding: '20px', borderRadius: '15px', border: '1px solid #28a745'}}>
+                <div style={{color: '#28a745', fontSize: '12px'}}>ESTIMATED PROFIT (FEES)</div>
+                <h2 style={{margin: '5px 0', color: '#28a745'}}>${estimatedProfit}</h2>
             </div>
         </div>
-        
-        <div style={{display: 'flex', gap: '15px', marginBottom: '30px'}}>
-            {Object.keys(float).map(loc => (
-                <div key={loc} style={{background: '#333', padding: '15px', borderRadius: '10px', flex: '1'}}>
-                    <div style={{fontSize: '12px', color: '#888'}}>{loc.toUpperCase()} FLOAT:</div>
-                    {isEditing ? 
-                        <input style={{width: '80%', background: '#444', color: 'white', border: 'none', fontSize: '18px'}} 
-                               value={float[loc]} onChange={(e) => handleFloatChange(loc, e.target.value)} 
-                        /> : <div style={{fontSize: '20px', fontWeight: 'bold'}}>{float[loc]}</div>}
-                </div>
-            ))}
-            <button onClick={() => setIsEditing(!isEditing)} style={{background: '#FFCC00', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>
+
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+            <h3>Global Liquidity</h3>
+            <button onClick={() => setIsEditing(!isEditing)} className="btn-mtn" style={{width: 'auto', padding: '10px 20px'}}>
                 {isEditing ? 'Save Balances' : 'Edit Float'}
             </button>
         </div>
 
+        <div style={{display: 'flex', gap: '15px', marginBottom: '40px'}}>
+            {Object.keys(float).map(loc => (
+                <div key={loc} style={{background: '#222', padding: '15px', borderRadius: '10px', flex: 1, border: '1px solid #333'}}>
+                    <div style={{fontSize: '11px', color: '#666'}}>{loc}</div>
+                    {isEditing ? 
+                        <input style={{width: '100%', background: 'transparent', color: 'white', border: 'none', borderBottom: '1px solid #FFCC00', fontSize: '18px'}} 
+                               value={float[loc]} onChange={(e) => setFloat({...float, [loc]: e.target.value})} />
+                        : <div style={{fontSize: '18px', fontWeight: 'bold'}}>{float[loc]}</div>
+                    }
+                </div>
+            ))}
+        </div>
+
         <h3>Waitlist Signups ({waitlist.length})</h3>
-        <table style={{width: '100%', borderCollapse: 'collapse', background: '#222', borderRadius: '10px', overflow: 'hidden'}}>
-          <thead><tr style={{background: '#333', textAlign: 'left'}}><th style={{padding: '12px'}}>User Email</th><th style={{padding: '12px'}}>Target Country</th><th style={{padding: '12px'}}>Provider</th></tr></thead>
+        <table style={{width: '100%', borderCollapse: 'collapse', background: '#222'}}>
+          <thead><tr style={{background: '#333', textAlign: 'left'}}><th style={{padding: '12px'}}>Email</th><th style={{padding: '12px'}}>Country</th><th style={{padding: '12px'}}>Service</th></tr></thead>
           <tbody>
             {waitlist.map((u, i) => (
               <tr key={i} style={{borderBottom: '1px solid #333'}}><td style={{padding: '12px'}}>{u.email}</td><td style={{padding: '12px'}}>{u.country}</td><td style={{padding: '12px'}}>{u.preferred_service}</td></tr>
@@ -103,8 +111,7 @@ function App() {
         <header className="hero">
             <div className="container">
                 <img src={mascot} className="mascot" alt="Mascot" style={{height: '140px'}} />
-                <h1>Card to Mobile Money <br/><span>Made Easy.</span></h1>
-                <p>We bridge the gap between Bermuda cards and African wallets.</p>
+                <h1>Card-to-Mobile <br/><span>Swift & Secure.</span></h1>
                 <form className="waitlist-form" onSubmit={handleSubmit}>
                     <input type="email" placeholder="Your Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
                     <div className="row">
@@ -119,7 +126,7 @@ function App() {
                             <option value="OPay">OPay/PalmPay</option>
                         </select>
                     </div>
-                    <button type="submit" className="btn-mtn">{loading ? "Wait..." : "Join the Waitlist"}</button>
+                    <button type="submit" className="btn-mtn">{loading ? "Wait..." : "Join Waitlist"}</button>
                 </form>
             </div>
         </header>
