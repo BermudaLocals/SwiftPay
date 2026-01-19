@@ -9,37 +9,39 @@ app.use(express.static(path.join(__dirname, 'client/build')));
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// GLOBAL SURGE CALCULATION (Applies to all countries)
+// --- HOLIDAY & SURGE CONFIGURATION ---
+const HOLIDAYS = [
+    "12-25", // Christmas
+    "12-26", // Boxing Day
+    "01-01", // New Year's Day
+    "03-06", // Ghana Independence Day
+    "10-01", // Nigeria Independence Day
+    "05-24", // Bermuda Day
+];
+
 const getGlobalPricing = () => {
     const now = new Date();
+    const monthDay = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
     const hour = now.getHours();
     const day = now.getDay();
+
+    // Check if today is a Holiday
+    const isHoliday = HOLIDAYS.includes(monthDay);
     
-    // High Traffic: Friday (5), Saturday (6), Sunday (0) OR Weekdays after 5 PM
-    const isPeak = (day === 0 || day === 5 || day === 6 || (hour >= 17 && hour <= 23));
+    // Check if it's a Weekend or Peak Hour (5 PM - 11 PM)
+    const isPeakTime = (day === 0 || day === 5 || day === 6 || (hour >= 17 && hour <= 23));
+
+    if (isHoliday || isPeakTime) {
+        return { rate: 0.08, status: "SURGE", reason: isHoliday ? "Holiday Traffic" : "Peak Hours" };
+    }
     
-    return {
-        rate: isPeak ? 0.08 : 0.03, // 8% Surge vs 3% Standard
-        status: isPeak ? "HIGH_TRAFFIC" : "NORMAL"
-    };
+    return { rate: 0.03, status: "NORMAL", reason: "Standard Rate" };
 };
 
-// API: Get Live Fee for ANY Country
+// API: Get Live Quote (Used by the frontend status bar)
 app.get('/api/global-quote', (req, res) => {
-    const amount = parseFloat(req.query.amount) || 0;
     const pricing = getGlobalPricing();
-    res.json({
-        fee: (amount * pricing.rate).toFixed(2),
-        total: (amount + (amount * pricing.rate)).toFixed(2),
-        surge: pricing.status === "HIGH_TRAFFIC"
-    });
-});
-
-// API: Admin List (Access for your global dashboard)
-app.get('/api/admin/list', async (req, res) => {
-    const { data, error } = await supabase.from('waitlist').select('*').order('joined_at', { ascending: false });
-    if (error) return res.status(500).json(error);
-    res.json(data);
+    res.json(pricing);
 });
 
 app.post('/api/waitlist', async (req, res) => {
@@ -49,9 +51,15 @@ app.post('/api/waitlist', async (req, res) => {
     res.json({ success: true });
 });
 
+app.get('/api/admin/list', async (req, res) => {
+    const { data, error } = await supabase.from('waitlist').select('*').order('joined_at', { ascending: false });
+    if (error) return res.status(500).json(error);
+    res.json(data);
+});
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log("SwiftPay Global Hub Active"));
+app.listen(PORT, () => console.log("SwiftPay Global Hub with Holiday Logic Active"));
