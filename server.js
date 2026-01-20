@@ -1,42 +1,22 @@
-const express = require('express');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
-
-const app = express();
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/build')));
-
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-
-// API: Public Waitlist Signup
-app.post('/api/waitlist', async (req, res) => {
-    const { email, country, preferred_service } = req.body;
-    const { data, error } = await supabase.from('waitlist').insert([{ email, country, preferred_service }]);
-    
-    if (error) return res.status(500).json(error);
-    
-    // Logic for instant notification would go here
-    console.log(`New Signup: ${email} from ${country}`);
-    res.json({ success: true });
+// Add these to your existing Express server
+app.get('/api/v1/meta/corridors', (req, res) => {
+  res.json({
+    active: true,
+    regions: [
+      { id: 'africa', name: 'West Africa', multiplier: 15.25, currency: 'GHS', status: 'Optimal' },
+      { id: 'philippines', name: 'Philippines', multiplier: 55.80, currency: 'PHP', status: 'High Yield' },
+      { id: 'caribbean', name: 'Jamaica', multiplier: 154.20, currency: 'JMD', status: 'Optimal' }
+    ],
+    timestamp: new Date().toISOString(),
+    system_load: "0.04ms"
+  });
 });
 
-// API: Admin Test Notification
-app.post('/api/admin/test-notify', (req, res) => {
-    // This simulates an alert to your phone/email
-    console.log("TEST ALERT: System is successfully sending notifications.");
-    res.json({ success: true, message: "Test alert sent to server logs!" });
+app.get('/api/v1/pulse', (req, res) => {
+    // Simulated live settlement pulse
+    res.json({
+        total_volume_today: Math.floor(Math.random() * 50000) + 120000,
+        active_nodes: 14,
+        bermuda_settlement_status: "Operational"
+    });
 });
-
-app.get('/api/admin/list', async (req, res) => {
-    const { data, error } = await supabase.from('waitlist').select('*').order('joined_at', { ascending: false });
-    if (error) return res.status(500).json(error);
-    res.json(data);
-});
-
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log("SwiftPay Global Hub Live"));
